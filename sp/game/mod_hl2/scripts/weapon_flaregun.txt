@@ -1,4 +1,4 @@
-// Pistol
+// Flare Gun
 
 WeaponData
 {
@@ -6,7 +6,7 @@ WeaponData
 	"printname"	"#HL2_Flaregun"
 	"viewmodel"			"models/weapons/v_flaregun.mdl"
 	"playermodel"		"models/weapons/w_flaregun.mdl"
-	"anim_prefix"		"pistol"
+	"anim_prefix"		"flaregun"
 	"bucket"			"1"
 	"bucket_position"	"2"
 	"bucket_360"			"0"

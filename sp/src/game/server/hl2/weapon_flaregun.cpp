@@ -14,33 +14,21 @@
 #include "IEffects.h"
 #include "engine/IEngineSound.h"
 #include "props.h"
+#include "ai_basenpc.h"
 #include "weapon_flaregun.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+ConVar	flaregun_primary_velocity("sv_flaregun_primary_velocity", "1500");
+ConVar	flaregun_secondary_velocity("sv_flaregun_secondary_velocity", "500");
+ConVar	flaregun_duration_seconds("sv_flaregun_lifetime_seconds", "30");
+ConVar	flaregun_stop_velocity("sv_flaregun_stop_velocity", "128");
+ConVar	flaregun_projectile_sticky("sv_flaregun_projectile_sticky", "0");
+ConVar	flaregun_dynamic_lights("sv_flaregun_dynamic_lights", "1");
 
-/********************************************************************
- NOTE: if you are looking at this file becase you would like flares 
- to be considered as fires (and thereby trigger gas traps), be aware 
- that the env_flare class is actually found in weapon_flaregun.cpp 
- and is really a repurposed piece of ammunition. (env_flare isn't the 
- rod-like safety flare prop, but rather the bit of flame on the end.)
-
- You will have some difficulty making it work here, because CFlare 
- does not inherit from CFire and will thus not be enumerated by 
- CFireSphere::EnumElement(). In order to have flares be detected and 
- used by this system, you will need to promote certain member functions 
- of CFire into an interface class from which both CFire and CFlare 
- inherit. You will also need to modify CFireSphere::EnumElement so that
- it properly disambiguates between fires and flares.
-
- For some partial work towards this end, see changelist 192474.
-
- ********************************************************************/
-
-
-#define	FLARE_LAUNCH_SPEED	1500
+extern ConVar    sk_plr_dmg_flare_round;
+extern ConVar    sk_npc_dmg_flare_round;
 
 LINK_ENTITY_TO_CLASS( env_flare, CFlare );
 
@@ -273,6 +261,7 @@ CFlare *CFlare::Create( Vector vecOrigin, QAngle vecAngles, CBaseEntity *pOwner,
 	pFlare->Spawn();
 	pFlare->SetTouch( &CFlare::FlareTouch );
 	pFlare->SetThink( &CFlare::FlareThink );
+	pFlare->m_bLight = flaregun_dynamic_lights.GetBool();
 	
 	//Start up the flare
 	pFlare->Start( lifetime );
@@ -368,9 +357,60 @@ void CFlare::FlareBurnTouch( CBaseEntity *pOther )
 {
 	if ( pOther && pOther->m_takedamage && ( m_flNextDamage < gpGlobals->curtime ) )
 	{
-		pOther->TakeDamage( CTakeDamageInfo( this, m_pOwner, 1, (DMG_BULLET|DMG_BURN) ) );
 		m_flNextDamage = gpGlobals->curtime + 1.0f;
+		IgniteOtherIfAllowed( pOther );
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Input  : *pOther - 
+//-----------------------------------------------------------------------------
+void CFlare::IgniteOtherIfAllowed( CBaseEntity* pOther )
+{
+	// Don't burn the player
+	if ( pOther->IsPlayer() )
+		return;
+
+	// Don't burn friendly NPCs
+	CAI_BaseNPC* pNPC;
+	pNPC = dynamic_cast<CAI_BaseNPC*>( pOther );
+	if ( pNPC && pNPC->IsPlayerAlly() )
+		return;
+	if ( pNPC )
+	{
+		// Don't burn friendly NPCs
+		if ( pNPC->IsPlayerAlly() )
+			return;
+
+		// Don't burn boss enemies
+		if ( FStrEq( STRING( pNPC->m_iClassname ), "npc_combinegunship" )
+			|| FStrEq( STRING( pNPC->m_iClassname ), "npc_combinedropship" )
+			|| FStrEq( STRING( pNPC->m_iClassname ), "npc_strider" )
+			|| FStrEq( STRING( pNPC->m_iClassname ), "npc_helicopter" )
+			)
+			return;
+
+		// Burn this NPC
+		pNPC->IgniteLifetime( flaregun_duration_seconds.GetFloat() );
+	}
+
+	// If this is a breakable prop, ignite it!
+	CBreakableProp* pBreakable;
+	pBreakable = dynamic_cast<CBreakableProp*>( pOther );
+	if (pBreakable)
+	{
+		pBreakable->IgniteLifetime( flaregun_duration_seconds.GetFloat() );
+		// Don't do damage to props that are on fire
+		if (pBreakable->IsOnFire())
+			return;
+	}
+
+	// Do damage
+	if (m_pOwner->IsPlayer())
+		pOther->TakeDamage(CTakeDamageInfo(this, m_pOwner, sk_plr_dmg_flare_round.GetFloat(), (DMG_BULLET | DMG_BURN)));
+	else
+		pOther->TakeDamage(CTakeDamageInfo(this, m_pOwner, sk_npc_dmg_flare_round.GetFloat(), (DMG_BULLET | DMG_BURN)));
 }
 
 //-----------------------------------------------------------------------------
@@ -392,21 +432,14 @@ void CFlare::FlareTouch( CBaseEntity *pOther )
 	//If the flare hit a person or NPC, do damage here.
 	if ( pOther && pOther->m_takedamage )
 	{
-		CBaseAnimating *pAnim;
-
-		pAnim = dynamic_cast<CBaseAnimating*>(pOther);
-		if( pAnim )
-		{
-			pAnim->Ignite( 30.0f );
-		}
-
 		Vector vecNewVelocity = GetAbsVelocity();
 		vecNewVelocity	*= 0.1f;
 		SetAbsVelocity( vecNewVelocity );
 		SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
-		SetGravity(1.0f);
+		SetGravity( 1.0f );
 		Die( 0.5 );
-
+		IgniteOtherIfAllowed( pOther );
+		m_nBounces++;
 		return;
 	}
 	else
@@ -415,8 +448,8 @@ void CFlare::FlareTouch( CBaseEntity *pOther )
 		trace_t tr;
 		tr = CBaseEntity::GetTouchTrace();
 
-		//Only do this on the first bounce
-		if ( m_nBounces == 0 )
+		//Only do this on the first bounce if the convar is set
+		if ( flaregun_projectile_sticky.GetBool() && m_nBounces == 0 )
 		{
 			const surfacedata_t *pdata = physprops->GetSurfaceData( tr.surface.surfaceProps );	
 
@@ -484,12 +517,12 @@ void CFlare::FlareTouch( CBaseEntity *pOther )
 		SetAbsVelocity( vecNewVelocity );
 
 		//Stopped?
-		if ( GetAbsVelocity().Length() < 64.0f )
+		if ( GetAbsVelocity().Length() < flaregun_stop_velocity.GetFloat() )
 		{
-			SetAbsVelocity( vec3_origin );
-			SetMoveType( MOVETYPE_NONE );
 			RemoveSolidFlags( FSOLID_NOT_SOLID );
 			AddSolidFlags( FSOLID_TRIGGER );
+			SetAbsVelocity( vec3_origin );
+			SetMoveType( MOVETYPE_NONE );
 			SetTouch( &CFlare::FlareBurnTouch );
 		}
 	}
@@ -589,7 +622,7 @@ void CFlare::InputLaunch( inputdata_t &inputdata )
 
 	if ( speed == 0 )
 	{
-		speed = FLARE_LAUNCH_SPEED;
+		speed = flaregun_primary_velocity.GetFloat();
 	}
 
 	Launch( direction, speed );
@@ -662,80 +695,60 @@ void CFlaregun::Precache( void )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Fires a flare from a given flaregun with a given velocity
+//-----------------------------------------------------------------------------
+static void AttackWithVelocity( CFlaregun* flaregun, float projectileVelocity )
+{
+	CBasePlayer *pOwner = ToBasePlayer( flaregun->GetOwner() );
+	
+	if ( pOwner == NULL )
+		return;
+
+	if ( flaregun->m_iClip1 <= 0 )
+	{
+		flaregun->SendWeaponAnim( ACT_VM_DRYFIRE );
+		pOwner->m_flNextAttack = gpGlobals->curtime + flaregun->SequenceDuration();
+		return;
+	}
+
+	flaregun->m_iClip1 = flaregun->m_iClip1 - 1;
+
+	flaregun->SendWeaponAnim( ACT_VM_PRIMARYATTACK );
+	pOwner->m_flNextAttack = gpGlobals->curtime + 1;
+
+	CFlare *pFlare = CFlare::Create( pOwner->Weapon_ShootPosition(), pOwner->EyeAngles(), pOwner, FLARE_DURATION );
+
+	if ( pFlare == NULL )
+		return;
+
+	Vector forward;
+	pOwner->EyeVectors( &forward );
+	forward *= projectileVelocity;
+	forward += pOwner->GetAbsVelocity(); // Add the player's velocity to the forward vector so that the flare follows the player's motion
+	forward.Normalized();
+
+	pFlare->SetAbsVelocity( forward );
+	pFlare->SetGravity( 1.0f );
+	pFlare->SetFriction( 0.85f );
+	pFlare->SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
+
+	flaregun->WeaponSound( SINGLE );
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Main attack
 //-----------------------------------------------------------------------------
 void CFlaregun::PrimaryAttack( void )
 {
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	
-	if ( pOwner == NULL )
-		return;
-
-	if ( m_iClip1 <= 0 )
-	{
-		SendWeaponAnim( ACT_VM_DRYFIRE );
-		pOwner->m_flNextAttack = gpGlobals->curtime + SequenceDuration();
-		return;
-	}
-
-	m_iClip1 = m_iClip1 - 1;
-
-	SendWeaponAnim( ACT_VM_PRIMARYATTACK );
-	pOwner->m_flNextAttack = gpGlobals->curtime + 1;
-
-	CFlare *pFlare = CFlare::Create( pOwner->Weapon_ShootPosition(), pOwner->EyeAngles(), pOwner, FLARE_DURATION );
-
-	if ( pFlare == NULL )
-		return;
-
-	Vector forward;
-	pOwner->EyeVectors( &forward );
-	forward *= 1500;
-
-	// Add the player's velocity to the forward vector so that the flare follows the player's motion
-	pFlare->SetAbsVelocity( forward + pOwner->GetAbsVelocity() );
-
-	WeaponSound( SINGLE );
+	AttackWithVelocity( this, flaregun_primary_velocity.GetFloat() );
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose: Secondary attack - launches flares closer to the player
 //-----------------------------------------------------------------------------
 void CFlaregun::SecondaryAttack( void )
 {
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	
-	if ( pOwner == NULL )
-		return;
-
-	if ( m_iClip1 <= 0 )
-	{
-		SendWeaponAnim( ACT_VM_DRYFIRE );
-		pOwner->m_flNextAttack = gpGlobals->curtime + SequenceDuration();
-		return;
-	}
-
-	m_iClip1 = m_iClip1 - 1;
-
-	SendWeaponAnim( ACT_VM_PRIMARYATTACK );
-	pOwner->m_flNextAttack = gpGlobals->curtime + 1;
-
-	CFlare *pFlare = CFlare::Create( pOwner->Weapon_ShootPosition(), pOwner->EyeAngles(), pOwner, FLARE_DURATION );
-
-	if ( pFlare == NULL )
-		return;
-
-	Vector forward;
-	pOwner->EyeVectors( &forward );
-	forward *= 500;
-
-	// Add the player's velocity to the forward vector so that the flare follows the player's motion
-	pFlare->SetAbsVelocity( forward + pOwner->GetAbsVelocity() );
-	pFlare->SetGravity(1.0f);
-	pFlare->SetFriction( 0.85f );
-	pFlare->SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
-
-	WeaponSound( SINGLE );
+	AttackWithVelocity( this, flaregun_secondary_velocity.GetFloat() );
 }
 
 //-----------------------------------------------------------------------------

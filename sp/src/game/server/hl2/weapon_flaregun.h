@@ -58,6 +58,8 @@ public:
 	void	FlareBurnTouch( CBaseEntity *pOther );
 	void	FlareThink( void );
 
+	void	IgniteOtherIfAllowed( CBaseEntity* pOther );
+
 	void	InputStart( inputdata_t &inputdata );
 	void	InputDie( inputdata_t &inputdata );
 	void	InputLaunch( inputdata_t &inputdata );
