@@ -13,6 +13,7 @@
 #include "soundenvelope.h"
 #include "IEffects.h"
 #include "engine/IEngineSound.h"
+#include "props.h"
 #include "weapon_flaregun.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -282,6 +283,9 @@ CFlare *CFlare::Create( Vector vecOrigin, QAngle vecAngles, CBaseEntity *pOwner,
 	//Burn out time
 	pFlare->m_flTimeBurnOut = gpGlobals->curtime + lifetime;
 
+	//Time to next burn damage
+	pFlare->m_flNextDamage = gpGlobals->curtime;
+
 	pFlare->RemoveSolidFlags( FSOLID_NOT_SOLID );
 	pFlare->AddSolidFlags( FSOLID_NOT_STANDABLE );
 
@@ -388,23 +392,6 @@ void CFlare::FlareTouch( CBaseEntity *pOther )
 	//If the flare hit a person or NPC, do damage here.
 	if ( pOther && pOther->m_takedamage )
 	{
-		/*
-			The Flare is the iRifle round right now. No damage, just ignite. (sjb)
-
-		//Damage is a function of how fast the flare is flying.
-		int iDamage = GetAbsVelocity().Length() / 50.0f;
-
-		if ( iDamage < 5 )
-		{
-			//Clamp minimum damage
-			iDamage = 5;
-		}
-
-		//Use m_pOwner, not GetOwnerEntity()
-		pOther->TakeDamage( CTakeDamageInfo( this, m_pOwner, iDamage, (DMG_BULLET|DMG_BURN) ) );
-		m_flNextDamage = gpGlobals->curtime + 1.0f;
-		*/
-
 		CBaseAnimating *pAnim;
 
 		pAnim = dynamic_cast<CBaseAnimating*>(pOther);
@@ -416,11 +403,8 @@ void CFlare::FlareTouch( CBaseEntity *pOther )
 		Vector vecNewVelocity = GetAbsVelocity();
 		vecNewVelocity	*= 0.1f;
 		SetAbsVelocity( vecNewVelocity );
-
 		SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
 		SetGravity(1.0f);
-
-
 		Die( 0.5 );
 
 		return;
@@ -657,8 +641,6 @@ void CFlare::AddToActiveFlares( void )
 	}
 }
 
-#if 0
-
 IMPLEMENT_SERVERCLASS_ST(CFlaregun, DT_Flaregun)
 END_SEND_TABLE()
 
@@ -708,8 +690,10 @@ void CFlaregun::PrimaryAttack( void )
 
 	Vector forward;
 	pOwner->EyeVectors( &forward );
+	forward *= 1500;
 
-	pFlare->SetAbsVelocity( forward * 1500 );
+	// Add the player's velocity to the forward vector so that the flare follows the player's motion
+	pFlare->SetAbsVelocity( forward + pOwner->GetAbsVelocity() );
 
 	WeaponSound( SINGLE );
 }
@@ -743,8 +727,10 @@ void CFlaregun::SecondaryAttack( void )
 
 	Vector forward;
 	pOwner->EyeVectors( &forward );
+	forward *= 500;
 
-	pFlare->SetAbsVelocity( forward * 500 );
+	// Add the player's velocity to the forward vector so that the flare follows the player's motion
+	pFlare->SetAbsVelocity( forward + pOwner->GetAbsVelocity() );
 	pFlare->SetGravity(1.0f);
 	pFlare->SetFriction( 0.85f );
 	pFlare->SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE );
@@ -752,4 +738,16 @@ void CFlaregun::SecondaryAttack( void )
 	WeaponSound( SINGLE );
 }
 
-#endif
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CFlaregun::Reload( void )
+{
+	bool fRet = DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+	if ( fRet )
+	{
+		WeaponSound( RELOAD );
+	}
+	return fRet;
+}
+

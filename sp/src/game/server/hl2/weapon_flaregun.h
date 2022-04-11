@@ -100,6 +100,7 @@ public:
 	void Precache( void );
 	void PrimaryAttack( void );
 	void SecondaryAttack( void );
+	virtual bool Reload(void);
 };
 
 #endif // WEAPON_FLAREGUN_H
