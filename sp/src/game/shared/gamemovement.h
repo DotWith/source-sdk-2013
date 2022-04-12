@@ -203,6 +203,9 @@ protected:
 
 	virtual void	CheckFalling( void );
 
+	virtual void	DoDuckJump( float flFraction );
+	virtual void	DoUnDuckJump( float flFraction );
+
 	virtual void	PlayerRoughLandingEffects( float fvol );
 
 	void			PlayerWaterSounds( void );
