@@ -18,13 +18,13 @@ class CExtinguisherJet : public CBaseEntity
 public:	
 	DECLARE_CLASS( CExtinguisherJet, CBaseEntity );
 
-	CExtinguisherJet( void );
+	CExtinguisherJet();
 
 	virtual void	Spawn( void );
 	virtual void	Precache();
 
-	void	TurnOn( void );
-	void	TurnOff( void );
+	virtual void	TurnOn( void );
+	virtual void	TurnOff( void );
 
 	void	InputEnable( inputdata_t &inputdata );
 	void	InputDisable( inputdata_t &inputdata );
@@ -32,10 +32,10 @@ public:
 
 	virtual void Think( void );
 	
-	void	ExtinguishThink( void );
+	virtual void ExtinguishThink( void );
 
 	DECLARE_DATADESC();
-	DECLARE_SERVERCLASS();
+	//DECLARE_SERVERCLASS();
 
 // Stuff from the datatable.
 public:

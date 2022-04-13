@@ -1,0 +1,26 @@
+//=============================================================================
+//
+// Purpose: Half-Life 2 mod game definition file (.fgd) 
+//			Defines new entities for the flaregun weapon
+//
+//=============================================================================
+
+@include "base.fgd"
+
+@PointClass base(Targetname, Parentname, Angles) = env_extinguisherjet : "Fire Extinguisher Jet"
+[
+	length(integer) : "Length" : 128
+	size(integer)	: "Size of jet" : 8
+	radius(integer)	: "Radius of extinguishment at impact point" : 32
+	strength(float)	: "Strength of the extinguisher" : "0.97"
+	
+	enabled(choices) : "Start On" : 1 =
+	[
+		0 : "No"
+		1 : "Yes"
+	]
+
+	input Enable(void) : "Enables the extinguisher"
+	input Disable(void) : "Disables the extinguisher"
+	input Toggle(void) : "Toggles the extinguisher"
+]

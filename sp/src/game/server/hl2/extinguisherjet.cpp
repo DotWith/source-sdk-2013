@@ -17,12 +17,13 @@
 extern ConVar fire_extinguisher_debug;
 
 //Networking
-IMPLEMENT_SERVERCLASS_ST( CExtinguisherJet, DT_ExtinguisherJet )
-	SendPropInt(SENDINFO(m_bEmit), 1, SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_bUseMuzzlePoint), 1, SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_nLength), 32, SPROP_UNSIGNED),
-	SendPropInt(SENDINFO(m_nSize), 32, SPROP_UNSIGNED),
-END_SEND_TABLE()
+/*IMPLEMENT_SERVERCLASS_ST(CExtinguisherJet, DT_ExtinguisherJet)
+	SendPropInt( SENDINFO( m_bEmit ), 1, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_bUseMuzzlePoint ), 1, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nLength ), 32, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nSize ), 32, SPROP_UNSIGNED ),
+END_SEND_TABLE()*/
+// TODO: Rework this
 
 //Save/restore
 BEGIN_DATADESC( CExtinguisherJet )
@@ -101,7 +102,7 @@ void CExtinguisherJet::TurnOn( void )
 		m_bEnabled = m_bEmit = true;
 	}
 	
-	SetThink( ExtinguishThink );
+	SetThink( &CExtinguisherJet::ExtinguishThink );
 	SetNextThink( gpGlobals->curtime + 0.1f );
 }
 
@@ -189,7 +190,7 @@ void CExtinguisherJet::ExtinguishThink( void )
 	FireSystem_ExtinguishInRadius( tr.endpos, m_nRadius, m_flStrength );
 
 	//Debug visualization
-	if ( fire_extinguisher_debug.GetInt() )
+	if ( fire_extinguisher_debug.GetBool() )
 	{
 		int	radius = m_nRadius;
 
