@@ -1,4 +1,4 @@
-// Fire extinguisher
+// Fire Extinguisher
 
 WeaponData
 {
@@ -24,13 +24,9 @@ WeaponData
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
-		"empty"				"Weapon_Extinguisher.Empty"
-		"reload"			"Weapon_Extinguisher.Reload"
-		//"single_shot"		"Weapon_Extinguisher.Single"
 		"single_shot"		"ExtinguisherJet.TurnOn"
 	    "special1"			"ExtinguisherJet.TurnOff"
 		"double_shot"		"Weapon_Extinguisher.Double"
-		// NPC SECTION
 		"single_shot_npc"	"Weapon_Extinguisher.NPC_Single"
 		"reload_npc"		"Weapon_Extinguisher.NPC_Reload"
 		"double_shot_npc"	"Weapon_Extinguisher.NPC_Double"
@@ -57,19 +53,8 @@ WeaponData
 		}
 		"ammo"
 		{
-				"file"		"sprites/a_icons1"
-				"x"			"55"
-				"y"			"60"
-				"width"		"73"
-				"height"	"15"
-		}
-		"ammo2"
-		{
-				"file"		"sprites/a_icons1"
-				"x"			"55"
-				"y"			"110"
-				"width"		"73"
-				"height"	"20"
+				"font"		"WeaponIconsSmall"
+				"character"	"p"
 		}
 		"crosshair"
 		{

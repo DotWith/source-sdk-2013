@@ -14,7 +14,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar fire_extinguisher_debug;
+extern ConVar fire_extinguisher_strength;
 
 //Networking
 /*IMPLEMENT_SERVERCLASS_ST(CExtinguisherJet, DT_ExtinguisherJet)
@@ -23,7 +23,7 @@ extern ConVar fire_extinguisher_debug;
 	SendPropInt( SENDINFO( m_nLength ), 32, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nSize ), 32, SPROP_UNSIGNED ),
 END_SEND_TABLE()*/
-// TODO: Rework this
+// TODO: Fix the networking
 
 //Save/restore
 BEGIN_DATADESC( CExtinguisherJet )
@@ -62,7 +62,7 @@ CExtinguisherJet::CExtinguisherJet( void )
 
 	m_nLength			= 128;
 	m_nSize				= 8;
-	m_flStrength		= 0.97f;	//FIXME: Stub numbers
+	m_flStrength		= fire_extinguisher_strength.GetFloat();
 	m_nRadius			= 32;
 
 	// Send to the client even though we don't have a model
@@ -78,27 +78,27 @@ void CExtinguisherJet::Spawn( void )
 
 	if ( m_bEnabled )
 	{
-		TurnOn();
+		TurnOn( NULL );
 	}
 }
 
 void CExtinguisherJet::Precache()
 {
 	BaseClass::Precache();
-
-	PrecacheScriptSound( "ExtinguisherJet.TurnOn" );
-	PrecacheScriptSound( "ExtinguisherJet.TurnOff" );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CExtinguisherJet::TurnOn( void )
+void CExtinguisherJet::TurnOn( CBaseCombatWeapon *weapon )
 {
 	//Turn on sound
 	if ( m_bEmit == false )
 	{
-		EmitSound( "ExtinguisherJet.TurnOn" );
+		if ( weapon != NULL )
+		{
+			weapon->WeaponSound( SINGLE );
+		}
 		m_bEnabled = m_bEmit = true;
 	}
 	
@@ -109,12 +109,15 @@ void CExtinguisherJet::TurnOn( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CExtinguisherJet::TurnOff( void )
+void CExtinguisherJet::TurnOff( CBaseCombatWeapon *weapon )
 {
 	//Turn off sound
 	if ( m_bEmit )
 	{
-		EmitSound( "ExtinguisherJet.TurnOff" );
+		if ( weapon != NULL )
+		{
+			weapon->WeaponSound(SPECIAL1);
+		}
 		m_bEnabled = m_bEmit = false;
 	}
 	
@@ -127,7 +130,7 @@ void CExtinguisherJet::TurnOff( void )
 //-----------------------------------------------------------------------------
 void CExtinguisherJet::InputEnable( inputdata_t &inputdata )
 {
-	TurnOn();
+	TurnOn( NULL );
 }
 
 //-----------------------------------------------------------------------------
@@ -136,7 +139,7 @@ void CExtinguisherJet::InputEnable( inputdata_t &inputdata )
 //-----------------------------------------------------------------------------
 void CExtinguisherJet::InputDisable( inputdata_t &inputdata )
 {
-	TurnOff();
+	TurnOff( NULL );
 }
 
 //-----------------------------------------------------------------------------
@@ -147,11 +150,11 @@ void CExtinguisherJet::InputToggle( inputdata_t &inputdata )
 {
 	if ( m_bEnabled )
 	{
-		TurnOff();
+		TurnOff( NULL );
 	}
 	else
 	{
-		TurnOn();
+		TurnOn( NULL );
 	}
 }
 
@@ -188,16 +191,4 @@ void CExtinguisherJet::ExtinguishThink( void )
 
 	//Extinguish the fire where we hit
 	FireSystem_ExtinguishInRadius( tr.endpos, m_nRadius, m_flStrength );
-
-	//Debug visualization
-	if ( fire_extinguisher_debug.GetBool() )
-	{
-		int	radius = m_nRadius;
-
-		NDebugOverlay::Line( GetAbsOrigin(), tr.endpos, 0, 0, 128, false, 0.1f );
-		
-		NDebugOverlay::Box( GetAbsOrigin(), Vector(-1, -1, -1), Vector(1, 1, 1), 0, 0, 128, false, 0.1f );
-		NDebugOverlay::Box( tr.endpos, Vector(-2, -2, -2), Vector(2, 2, 2), 0, 0, 128, false, 0.1f );
-		NDebugOverlay::Box( tr.endpos, Vector(-radius, -radius, -radius), Vector(radius, radius, radius), 0, 0, 255, false, 0.1f );
-	}
 }

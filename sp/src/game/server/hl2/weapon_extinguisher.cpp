@@ -15,13 +15,13 @@
 #include "entitylist.h"
 #include "fire.h"
 #include "ar2_explosion.h"
-#include "ndebugoverlay.h"
+#include "soundent.h"
 #include "engine/IEngineSound.h"
+#include "gamestats.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar	fire_extinguisher_debug( "fire_extinguisher_debug", "0" );
 ConVar	fire_extinguisher_radius( "fire_extinguisher_radius", "45" );
 ConVar	fire_extinguisher_distance( "fire_extinguisher_distance", "200" );
 ConVar	fire_extinguisher_strength( "fire_extinguisher_strength", "0.97" );	//TODO: Stub for real numbers
@@ -45,6 +45,8 @@ public:
 
 	void	Spawn( void );
 	void	Precache( void );
+
+	void	PrimaryAttack( void );
 
 	void	ItemPostFrame( void );
 	void	Event_Killed( const CTakeDamageInfo &info );
@@ -77,7 +79,7 @@ END_DATADESC()
 
 CWeaponExtinguisher::CWeaponExtinguisher( void )
 {
-	m_pJet		= NULL;
+	m_pJet = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -85,11 +87,46 @@ CWeaponExtinguisher::CWeaponExtinguisher( void )
 //-----------------------------------------------------------------------------
 void CWeaponExtinguisher::Precache( void )
 {
-	PrecacheScriptSound( "ExtinguisherCharger.Use" );
+	PrecacheScriptSound( "ExtinguisherJet.TurnOn" );
+	PrecacheScriptSound( "ExtinguisherJet.TurnOff" );
 
 	UTIL_PrecacheOther( "env_extinguisherjet" );
 
 	BaseClass::Precache();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CWeaponExtinguisher::PrimaryAttack( void )
+{
+	CBasePlayer* pOwner = ToBasePlayer( GetOwner() );
+
+	if ( pOwner == NULL )
+		return;
+
+	// Turn the jet on
+	StartJet();
+
+	Vector vForward, vRight, vUp;
+
+	pOwner->EyeVectors( &vForward, &vRight, &vUp );
+
+	Vector muzzlePoint = pOwner->Weapon_ShootPosition() + vForward * 15.0f + vRight * 6.0f + vUp * -4.0f;
+
+	trace_t	tr;
+	Vector vecEye = pOwner->EyePosition();
+	UTIL_TraceLine( vecEye, vecEye + vForward * 128, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+
+	if ( m_flNextPrimaryAttack < gpGlobals->curtime )
+	{
+		// Take away our primary ammo type
+		pOwner->RemoveAmmo( 1, m_iPrimaryAmmoType );
+		m_flNextPrimaryAttack = gpGlobals->curtime + EXTINGUISHER_AMMO_RATE;
+	}
+
+	// Extinguish the fire where we hit
+	FireSystem_ExtinguishInRadius( tr.endpos, fire_extinguisher_radius.GetFloat(), fire_extinguisher_strength.GetFloat() );
 }
 
 //-----------------------------------------------------------------------------
@@ -123,13 +160,13 @@ void CWeaponExtinguisher::Equip( CBaseCombatCharacter *pOwner )
 //-----------------------------------------------------------------------------
 void CWeaponExtinguisher::Event_Killed( const CTakeDamageInfo &info )
 {
-	//TODO: Use a real effect
+	// TODO: Use a real effect
 	if ( AR2Explosion *pExplosion = AR2Explosion::CreateAR2Explosion( GetAbsOrigin() ) )
 	{
 		pExplosion->SetLifetime( 10 );
 	}		
 
-	//TODO: Use a real effect
+	// TODO: Use a real effect
 	CPASFilter filter( GetAbsOrigin() );
 
 	te->Explosion( filter, 0.0,
@@ -141,7 +178,7 @@ void CWeaponExtinguisher::Event_Killed( const CTakeDamageInfo &info )
 		250,
 		100 );
 
-	//Put out fire in a radius
+	// Put out fire in a radius
 	FireSystem_ExtinguishInRadius( GetAbsOrigin(), fire_extinguisher_explode_radius.GetFloat(), fire_extinguisher_explode_strength.GetFloat() );
 
 	SetThink( &CWeaponExtinguisher::SUB_Remove );
@@ -153,23 +190,18 @@ void CWeaponExtinguisher::Event_Killed( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CWeaponExtinguisher::StartJet( void )
 {
-	//See if the jet needs to be created
+	WeaponSound( SINGLE );
+
+	// See if the jet needs to be created
 	if ( m_pJet == NULL )
 	{
 		m_pJet = CWeaponExtinguisher::Create( GetAbsOrigin(), GetAbsAngles(), GetOwner()->edict() );
-		//m_pJet->SetParent( this );
-
-		if ( m_pJet == NULL )
-		{
-			Msg( "Unable to create jet for weapon_extinguisher!\n" );
-			return;
-		}
 	}
 
-	//Turn the jet on
+	// Turn the jet on
 	if ( m_pJet != NULL )
 	{
-		m_pJet->TurnOn();
+		m_pJet->TurnOn( this );
 	}
 }
 
@@ -184,9 +216,9 @@ void CWeaponExtinguisher::StartJet( void )
 //-----------------------------------------------------------------------------
 CExtinguisherJet * CWeaponExtinguisher::Create( const Vector& vecOrigin, const QAngle& vecAngles, edict_t* pentOwner = NULL )
 {
-	CExtinguisherJet* pJet = (CExtinguisherJet *) CBaseEntity::Create( "env_extinguisherjet", vecOrigin, vecAngles, CBaseEntity::Instance(pentOwner) );
+	CExtinguisherJet* pJet = (CExtinguisherJet *) CBaseEntity::Create( "env_extinguisherjet", vecOrigin, vecAngles, CBaseEntity::Instance( pentOwner ) );
 
-	pJet->SetOwnerEntity( Instance(pentOwner) );
+	pJet->SetOwnerEntity( Instance( pentOwner ) );
 	pJet->Spawn();
 
 	pJet->m_bEmit = false;
@@ -202,10 +234,10 @@ CExtinguisherJet * CWeaponExtinguisher::Create( const Vector& vecOrigin, const Q
 //-----------------------------------------------------------------------------
 void CWeaponExtinguisher::StopJet( void )
 {
-	//Turn the jet off
+	// Turn the jet off
 	if ( m_pJet != NULL )
 	{
-		m_pJet->TurnOff();
+		m_pJet->TurnOff( this );
 	}
 }
 
@@ -214,75 +246,29 @@ void CWeaponExtinguisher::StopJet( void )
 //-----------------------------------------------------------------------------
 void CWeaponExtinguisher::ItemPostFrame( void )
 {
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	CBasePlayer* pOwner = ToBasePlayer( GetOwner() );
 
-	if (pPlayer == NULL)
+	if ( pOwner == NULL )
 		return;
 
-	//Only shoot if we have ammo
-	if ( pPlayer->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 )
-	{
-		StopJet();
-		return;
-	}
-	
 	//See if we should try and extinguish fires
-	if ( pPlayer->m_nButtons & IN_ATTACK )
+	if ( pOwner->m_nButtons & IN_ATTACK )
 	{
-		//Drain ammo
-		if ( m_flNextPrimaryAttack < gpGlobals->curtime  )
+		if ( !IsMeleeWeapon() &&
+			( ( UsesClipsForAmmo1() && m_iClip1 <= 0 ) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 ) ) )
 		{
-			pPlayer->RemoveAmmo( 1, m_iPrimaryAmmoType );
-			m_flNextPrimaryAttack = gpGlobals->curtime + EXTINGUISHER_AMMO_RATE;
+			HandleFireOnEmpty();
 		}
-
-		//If we're just run out...
-		if ( pPlayer->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 )
+		else if ( pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false )
 		{
-			StopJet();
+			// This weapon doesn't fire underwater
+			WeaponSound( EMPTY );
+			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
 			return;
 		}
-
-		//Turn the jet on
-		StartJet();
-
-		Vector	vTestPos, vMuzzlePos;
-		Vector	vForward, vRight, vUp;
-
-		pPlayer->EyeVectors( &vForward, &vRight, &vUp );
-		
-		vMuzzlePos	= pPlayer->Weapon_ShootPosition( );
-		
-		//FIXME: Need to get the exact same muzzle point!
-
-		//FIXME: This needs to be adjusted so the server collision matches the visuals on the client
-		vMuzzlePos	+= vForward * 15.0f;
-		vMuzzlePos	+= vRight * 6.0f;
-		vMuzzlePos	+= vUp * -4.0f;
-
-		QAngle aTmp;
-		VectorAngles( vForward, aTmp );
-		aTmp[PITCH] += 10;
-		AngleVectors( aTmp, &vForward );
-
-		vTestPos	= vMuzzlePos + ( vForward * fire_extinguisher_distance.GetInt() );
-
-		trace_t	tr;
-		UTIL_TraceLine( vMuzzlePos, vTestPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
-
-		//Extinguish the fire where we hit
-		FireSystem_ExtinguishInRadius( tr.endpos, fire_extinguisher_radius.GetFloat(), fire_extinguisher_strength.GetFloat() );
-
-		//Debug visualization
-		if ( fire_extinguisher_debug.GetBool() )
+		else
 		{
-			int	radius = fire_extinguisher_radius.GetFloat();
-
-			NDebugOverlay::Line( vMuzzlePos, tr.endpos, 0, 0, 128, false, 0.0f );
-			
-			NDebugOverlay::Box( vMuzzlePos, Vector(-1, -1, -1), Vector(1, 1, 1), 0, 0, 128, false, 0.0f );
-			NDebugOverlay::Box( tr.endpos, Vector(-2, -2, -2), Vector(2, 2, 2), 0, 0, 128, false, 0.0f );
-			NDebugOverlay::Box( tr.endpos, Vector(-radius, -radius, -radius), Vector(radius, radius, radius), 0, 0, 255, false, 0.0f );
+			PrimaryAttack();
 		}
 	}
 	else
@@ -296,7 +282,8 @@ class CExtinguisherCharger : public CBaseToggle
 public:
 	DECLARE_CLASS( CExtinguisherCharger, CBaseToggle );
 
-	virtual void Spawn( void );
+	virtual void	Precache( void );
+	virtual void	Spawn( void );
 	bool CreateVPhysics();
 	void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 
@@ -322,6 +309,12 @@ BEGIN_DATADESC( CExtinguisherCharger )
 
 END_DATADESC()
 
+void CExtinguisherCharger::Precache( void )
+{
+	BaseClass::Precache();
+
+	PrecacheScriptSound("ExtinguisherCharger.Use");
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Spawn the object

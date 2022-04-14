@@ -23,8 +23,8 @@ public:
 	virtual void	Spawn( void );
 	virtual void	Precache();
 
-	virtual void	TurnOn( void );
-	virtual void	TurnOff( void );
+	virtual void	TurnOn( CBaseCombatWeapon *weapon );
+	virtual void	TurnOff( CBaseCombatWeapon* weapon );
 
 	void	InputEnable( inputdata_t &inputdata );
 	void	InputDisable( inputdata_t &inputdata );
