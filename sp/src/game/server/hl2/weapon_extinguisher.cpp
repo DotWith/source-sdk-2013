@@ -257,10 +257,12 @@ void CWeaponExtinguisher::ItemPostFrame( void )
 		if ( !IsMeleeWeapon() &&
 			( ( UsesClipsForAmmo1() && m_iClip1 <= 0 ) || ( !UsesClipsForAmmo1() && pOwner->GetAmmoCount( m_iPrimaryAmmoType ) <= 0 ) ) )
 		{
+			StopJet();
 			HandleFireOnEmpty();
 		}
 		else if ( pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false )
 		{
+			StopJet();
 			// This weapon doesn't fire underwater
 			WeaponSound( EMPTY );
 			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;

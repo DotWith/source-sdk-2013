@@ -5,8 +5,9 @@
 // $NoKeywords: $
 //=============================================================================//
 
-#ifndef EXTINGUISHERJET_H
-#define EXTINGUISHERJET_H
+#ifndef ENTITYEXTINGUISHERJET_H
+#define ENTITYEXTINGUISHERJET_H
+
 #ifdef _WIN32
 #pragma once
 #endif
@@ -16,6 +17,7 @@
 class CExtinguisherJet : public CBaseEntity
 {
 public:	
+	DECLARE_SERVERCLASS();
 	DECLARE_CLASS( CExtinguisherJet, CBaseEntity );
 
 	CExtinguisherJet();
@@ -35,7 +37,6 @@ public:
 	virtual void ExtinguishThink( void );
 
 	DECLARE_DATADESC();
-	//DECLARE_SERVERCLASS();
 
 // Stuff from the datatable.
 public:
@@ -52,4 +53,4 @@ public:
 	bool	m_bAutoExtinguish;	//Whether extinguisher should put out fires in its think, or let owner do it
 };
 
-#endif // EXTINGUISHERJET_H
+#endif // ENTITYEXTINGUISHERJET_H

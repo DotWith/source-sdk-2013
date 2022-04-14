@@ -9,23 +9,25 @@
 #include "extinguisherjet.h"
 #include "engine/IEngineSound.h"
 #include "fire.h"
-#include "ndebugoverlay.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 extern ConVar fire_extinguisher_strength;
 
-//Networking
-/*IMPLEMENT_SERVERCLASS_ST(CExtinguisherJet, DT_ExtinguisherJet)
+//-----------------------------------------------------------------------------
+// Networking
+//-----------------------------------------------------------------------------
+IMPLEMENT_SERVERCLASS_ST( CExtinguisherJet, DT_ExtinguisherJet )
 	SendPropInt( SENDINFO( m_bEmit ), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_bUseMuzzlePoint ), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nLength ), 32, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nSize ), 32, SPROP_UNSIGNED ),
-END_SEND_TABLE()*/
-// TODO: Fix the networking
+END_SEND_TABLE()
 
-//Save/restore
+//-----------------------------------------------------------------------------
+// Save/load 
+//-----------------------------------------------------------------------------
 BEGIN_DATADESC( CExtinguisherJet )
 
 	//Regular fields
