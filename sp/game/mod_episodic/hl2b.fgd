@@ -1,11 +1,15 @@
 //=============================================================================
 //
 // Purpose: Half-Life 2 mod game definition file (.fgd) 
-//			Defines new entities for the flaregun weapon
+//			Defines new entities for the Half-Life 2 Beta
 //
 //=============================================================================
 
+@include "halflife2.fgd"
 @include "base.fgd"
+
+@PointClass base(Item) studio("models/items/boxflares.mdl")= item_box_flare_rounds : "Box of Flare Rounds" []
+@PointClass base(Weapon) studio("models/weapons/w_pistol.mdl") = weapon_flaregun : "Flaregun" []
 
 @PointClass base(Targetname, Parentname, Angles) = env_extinguisherjet : "Fire Extinguisher Jet"
 [

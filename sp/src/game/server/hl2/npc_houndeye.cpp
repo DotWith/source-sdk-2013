@@ -171,15 +171,6 @@ BEGIN_DATADESC( CNPC_Houndeye )
 
 END_DATADESC()
 
-//=========================================================
-// Classify - indicates this monster's place in the 
-// relationship table.
-//=========================================================
-Class_T	CNPC_Houndeye::Classify ( void )
-{
-	return	CLASS_HOUNDEYE;
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  :
@@ -521,7 +512,7 @@ void CNPC_Houndeye::AlertSound ( void )
 //=========================================================
 // DeathSound 
 //=========================================================
-void CNPC_Houndeye::DeathSound ( void )
+void CNPC_Houndeye::DeathSound ( const CTakeDamageInfo& info )
 {
 	EmitSound( "NPC_Houndeye.Die" );
 }
@@ -529,7 +520,7 @@ void CNPC_Houndeye::DeathSound ( void )
 //=========================================================
 // PainSound 
 //=========================================================
-void CNPC_Houndeye::PainSound ( void )
+void CNPC_Houndeye::PainSound ( const CTakeDamageInfo& info )
 {
 	EmitSound( "NPC_Houndeye.Pain" );
 }
@@ -691,9 +682,9 @@ void CNPC_Houndeye::SonicAttack ( void )
 
 	CBaseEntity *pEntity = NULL;
 	// iterate on all entities in the vicinity.
-	for ( CEntitySphereQuery sphere( GetAbsOrigin(), HOUNDEYE_MAX_ATTACK_RADIUS ); pEntity = sphere.GetCurrentEntity(); sphere.NextEntity() )
+	for ( CEntitySphereQuery sphere( GetAbsOrigin(), HOUNDEYE_MAX_ATTACK_RADIUS ); ( pEntity = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
 	{
-		if (pEntity->Classify()	== CLASS_HOUNDEYE)
+		if (pEntity->Classify() == CLASS_HOUNDEYE)
 		{
 			continue;
 		}
@@ -802,7 +793,7 @@ void CNPC_Houndeye::StartTask( const Task_t *pTask )
 			Vector vTargetPos = GetEnemyLKP();
 			vTargetPos.z	= GetFloorZ(vTargetPos);
 
-			if (GetNavigator()->SetRadialGoal(vTargetPos, random->RandomInt(50,500), 90, 175, m_bLoopClockwise))
+			if (GetNavigator()->SetRadialGoal(vTargetPos, vTargetPos, random->RandomInt(50, 500), 90, 175, m_bLoopClockwise))
 			{
 				TaskComplete();
 				return;
@@ -1091,7 +1082,7 @@ int CNPC_Houndeye::SelectSchedule( void )
 				return SCHED_HOUND_GROUP_RETREAT;
 			}
 
-			if ( HasCondition( COND_LIGHT_DAMAGE ) | 
+			if ( HasCondition( COND_LIGHT_DAMAGE ) || 
 				 HasCondition( COND_HEAVY_DAMAGE ) )
 			{
 				if ( random->RandomFloat( 0 , 1 ) <= 0.4 )

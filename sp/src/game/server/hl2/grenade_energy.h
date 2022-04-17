@@ -14,11 +14,17 @@
 #ifndef	GRENADEENERGY_H
 #define	GRENADEENERGY_H
 
+#if defined( _WIN32 )
+#pragma once
+#endif
+
 #include "basegrenade_shared.h"
 
 class CGrenadeEnergy : public CBaseGrenade
 {
 public:
+	DECLARE_DATADESC();
+
 	DECLARE_CLASS( CGrenadeEnergy, CBaseGrenade );
 
 	static void Shoot( CBaseEntity* pOwner, const Vector &vStart, Vector vVelocity );
@@ -36,7 +42,6 @@ public:
 
 	void EXPORT				Detonate(void);
 
-	DECLARE_DATADESC();
 };
 
 #endif	//GRENADEENERGY_H

@@ -27,7 +27,6 @@ class CNPC_Houndeye : public CAI_BaseNPC
 public:
 	void			Spawn( void );
 	void			Precache( void );
-	Class_T			Classify ( void );
 	void			HandleAnimEvent( animevent_t *pEvent );
 	float			MaxYawSpeed ( void );
 	void			WarmUpSound ( void );
