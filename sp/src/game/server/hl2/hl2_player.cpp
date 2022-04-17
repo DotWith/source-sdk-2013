@@ -1916,7 +1916,7 @@ bool CHL2_Player::SuitPower_AddDevice( const CSuitPowerDevice &device )
 		return false;
 
 	m_HL2Local.m_bitsActiveDevices |= device.GetDeviceID();
-	m_flSuitPowerLoad += device.GetDeviceDrainRate();
+	//m_flSuitPowerLoad += device.GetDeviceDrainRate();
 	return true;
 }
 
@@ -1939,7 +1939,7 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
-	m_flSuitPowerLoad -= device.GetDeviceDrainRate();
+	//m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
 	if( m_HL2Local.m_bitsActiveDevices == 0x00000000 )
 	{
@@ -1961,7 +1961,7 @@ bool CHL2_Player::SuitPower_ShouldRecharge( void )
 		return false;
 
 	// Is the system fully charged?
-	if( m_HL2Local.m_flSuitPower >= 100.0f )
+	if (m_HL2Local.m_flSuitPower >= 100.0f)
 		return false; 
 
 	// Has the system been in a no-load state for long enough
