@@ -493,8 +493,6 @@ CBaseViewModel *CBasePlayer::GetViewModel( int index /*= 0*/, bool bObserverOK )
 //-----------------------------------------------------------------------------
 void CBasePlayer::CreateViewModel( int index /*=0*/ )
 {
-	Assert( index >= 0 && index < MAX_VIEWMODELS );
-
 	if ( GetViewModel( index ) )
 		return;
 
@@ -513,10 +511,29 @@ void CBasePlayer::CreateViewModel( int index /*=0*/ )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CBasePlayer::CreateHandModel( int index, int iOtherVm )
+{
+	if ( GetViewModel( index ) && GetViewModel( iOtherVm ) )
+		return;
+
+	CBaseViewModel* vm = ( CBaseViewModel * )CreateEntityByName( "hand_viewmodel" );
+	if ( vm )
+	{
+		vm->SetAbsOrigin( GetAbsOrigin() );
+		vm->SetOwner( this );
+		vm->SetIndex( index );
+		DispatchSpawn( vm );
+		vm->FollowEntity( GetViewModel( iOtherVm ), true );
+		m_hViewModel.Set( index, vm );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CBasePlayer::DestroyViewModels( void )
 {
-	int i;
-	for ( i = MAX_VIEWMODELS - 1; i >= 0; i-- )
+	for ( int i = m_hViewModel.Count() - 1; i >= 0; i--)
 	{
 		CBaseViewModel *vm = GetViewModel( i );
 		if ( !vm )
@@ -4983,6 +5000,7 @@ void CBasePlayer::Spawn( void )
 	enginesound->SetPlayerDSP( user, 0, false );
 
 	CreateViewModel();
+	CreateHandModel();
 
 	SetCollisionGroup( COLLISION_GROUP_PLAYER );
 
@@ -6149,7 +6167,7 @@ void CBasePlayer::CheatImpulseCommands( int iImpulse )
 		GiveAmmo( 32,	"357" );
 		GiveAmmo( 16,	"XBowBolt" );
 		GiveAmmo( 20,	"FlareRound" );
-		GiveAmmo( 100,	"Extinguisher" );
+		//GiveAmmo( 100,	"Extinguisher" );
 #ifdef HL2_EPISODIC
 		GiveAmmo( 5,	"Hopwire" );
 #endif		
@@ -6166,7 +6184,7 @@ void CBasePlayer::CheatImpulseCommands( int iImpulse )
 		GiveNamedItem( "weapon_357" );
 		GiveNamedItem( "weapon_crossbow" );
 		GiveNamedItem( "weapon_flaregun" );
-		GiveNamedItem( "weapon_extinguisher" );
+		//GiveNamedItem( "weapon_extinguisher" );
 #ifdef HL2_EPISODIC
 		// GiveNamedItem( "weapon_magnade" );
 #endif

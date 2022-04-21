@@ -268,6 +268,7 @@ static const char *s_PreserveEnts[] =
 {
 	"player",
 	"viewmodel",
+	"hand_viewmodel",
 	"worldspawn",
 	"soundent",
 	"ai_network",
