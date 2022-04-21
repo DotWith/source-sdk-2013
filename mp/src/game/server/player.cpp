@@ -2873,6 +2873,11 @@ float CBasePlayer::GetHeldObjectMass( IPhysicsObject *pHeldObject )
 }
 
 
+CBaseEntity	*CBasePlayer::GetHeldObject( void )
+{
+	return NULL;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose:	Server side of jumping rules.  Most jumping logic is already
 //			handled in shared gamemovement code.  Put stuff here that should
