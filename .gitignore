@@ -76,7 +76,7 @@ config.cfg
 *.tmp
 
 # Microsoft Speech API
-sp/src/utils/sapi51/
+sapi51
 
 # Ignore various Linux vpc products
 compile_commands.json
