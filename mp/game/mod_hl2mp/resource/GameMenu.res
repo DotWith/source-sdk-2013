@@ -36,26 +36,35 @@
 	}
 	"7"
 	{
-		"label" "#GameUI_GameMenu_ActivateVR"
-		"command" "engine vr_activate"
-		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRInactive" "1"
+		"label" ""
+		"command" ""
+		"OnlyInGame" "1"
 	}
-	"8"
+	"8"	
 	{
-		"label" "#GameUI_GameMenu_DeactivateVR"
-		"command" "engine vr_deactivate"
+		"label" "#GameUI_GameMenu_NewGame"
+		"command" "OpenNewGameDialog"
 		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRActive" "1"
+	}
+	"9"
+	{
+		"label" "#GameUI_GameMenu_LoadGame"
+		"command" "OpenLoadGameDialog"
+		"InGameOrder" "30"
 	}
 	"10"
+	{
+		"label" "#GameUI_GameMenu_SaveGame"
+		"command" "OpenSaveGameDialog"
+		"InGameOrder" "20"
+		"OnlyInGame" "1"
+	}
+	"11"
 	{
 		"label" "#GameUI_GameMenu_Options"
 		"command" "OpenOptionsDialog"
 	}
-	"11"
+	"12"
 	{
 		"label" "#GameUI_GameMenu_Quit"
 		"command" "Quit"
