@@ -44,19 +44,16 @@
 	{
 		"label" "#GameUI_GameMenu_NewGame"
 		"command" "OpenNewGameDialog"
-		"InGameOrder" "40"
 	}
 	"9"
 	{
 		"label" "#GameUI_GameMenu_LoadGame"
 		"command" "OpenLoadGameDialog"
-		"InGameOrder" "30"
 	}
 	"10"
 	{
 		"label" "#GameUI_GameMenu_SaveGame"
 		"command" "OpenSaveGameDialog"
-		"InGameOrder" "20"
 		"OnlyInGame" "1"
 	}
 	"11"
